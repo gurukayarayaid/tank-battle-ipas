@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tank Battle IPAS - Kelas 3 SD</title>
+    <link rel="icon" href="assets/tank1.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ================= MENU ================= -->
+    <div id="menu-screen">
+        <div class="school-header">
+            <div class="school-info">
+                <div class="school-logo">🏫</div>
+                <div class="school-text">
+                    <h2>SD NEGERI CERDAS JAYA</h2>
+                    <p>Jl. Pendidikan No. 1, Indonesia</p>
+                </div>
+            </div>
+            <div class="header-icons">
+                <button class="icon-btn" id="btn-sound" title="Suara">🔊</button>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <div id="status-badge">
+                <div class="status-dot"></div>
+                <span id="status-text">Mode Lokal - Siap Main!</span>
+            </div>
+
+            <h1 class="game-title">TANK BATTLE</h1>
+            <div class="game-subtitle">Duel IPAS &bull; Kelas 3 SD</div>
+            <div class="game-author">👩‍🏫 Guru: <span id="teacher-name">Bu/Pak Guru</span></div>
+
+            <div class="choice-section">
+                <span class="choice-label">🎯 Pilih Tingkat Soal</span>
+                <div class="setting-options" id="level-options">
+                    <button class="opt-btn level-btn" data-level="mudah">Mudah</button>
+                    <button class="opt-btn level-btn active" data-level="sedang">Sedang</button>
+                    <button class="opt-btn level-btn" data-level="sulit">Sulit</button>
+                </div>
+                <p class="choice-hint" id="level-hint">Soal latihan sehari-hari yang menantang.</p>
+            </div>
+
+            <div class="choice-section">
+                <span class="choice-label">📝 Pilih Jumlah Soal</span>
+                <div class="setting-options" id="count-options">
+                    <button class="opt-btn count-btn" data-count="5">5</button>
+                    <button class="opt-btn count-btn active" data-count="10">10</button>
+                    <button class="opt-btn count-btn" data-count="15">15</button>
+                    <button class="opt-btn count-btn" data-count="20">20</button>
+                </div>
+                <p class="choice-hint">Jumlah soal dibagi rata untuk kedua pemain.</p>
+            </div>
+
+            <button id="btn-start-game" class="btn-start-menu">MULAI PERANG!</button>
+            <button class="btn-settings" onclick="toggleSettings(true)">⚙️ Pengaturan Permainan</button>
+
+            <p class="version-text">v1.0 - Siap dimainkan offline</p>
+        </div>
+    </div>
+
+    <!-- ================= SETTINGS ================= -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">⚙️ Pengaturan Permainan</h2>
+
+            <div class="setting-section">
+                <span class="setting-label">⏱️ Waktu per Soal</span>
+                <div class="setting-options" id="timer-options">
+                    <button class="opt-btn timer-btn" data-time="15">15s</button>
+                    <button class="opt-btn timer-btn active" data-time="30">30s</button>
+                    <button class="opt-btn timer-btn" data-time="45">45s</button>
+                    <button class="opt-btn timer-btn" data-time="60">60s</button>
+                    <button class="opt-btn timer-btn" data-time="0">Off</button>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <span class="setting-label">💔 Hukuman Salah (HP -10)</span>
+                <div class="setting-options" id="penalty-options">
+                    <button class="opt-btn penalty-btn active" data-penalty="true">Ya</button>
+                    <button class="opt-btn penalty-btn" data-penalty="false">Tidak</button>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <span class="setting-label">🤖 Karakter P1 (Kiri / Biru)</span>
+                <div class="setting-options tank-select-p1"></div>
+            </div>
+
+            <div class="setting-section">
+                <span class="setting-label">🤖 Karakter P2 (Kanan / Merah)</span>
+                <div class="setting-options tank-select-p2"></div>
+            </div>
+
+            <button class="close-modal-btn" onclick="toggleSettings(false)">SIMPAN &amp; TUTUP</button>
+        </div>
+    </div>
+
+    <!-- ================= COUNTDOWN ================= -->
+    <div id="countdown-screen">
+        <div id="countdown-text">3</div>
+    </div>
+
+    <!-- ================= GAME ================= -->
+    <div id="game-screen">
+        <div class="top-buttons">
+            <button class="game-ctrl-btn" onclick="backToMenu()">🏠 MENU</button>
+            <button class="game-ctrl-btn" onclick="toggleFullscreen()">⛶ LAYAR PENUH</button>
+        </div>
+
+        <div id="proj-p1" class="projectile proj-blue"></div>
+        <div id="proj-p2" class="projectile proj-red"></div>
+
+        <div class="battle-row">
+            <!-- PLAYER 1 -->
+            <div class="player-zone zone-blue" id="p1-zone">
+                <div class="battle-area">
+                    <div class="decor-emoji">☁️</div>
+                    <div class="hud-row">
+                        <div class="avatar-badge badge-blue">P1</div>
+                        <div class="health-bar-container">
+                            <div id="hp-p1" class="health-fill" style="width:100%"></div>
+                        </div>
+                    </div>
+                    <div id="tank-p1" class="tank-wrap">
+                        <img src="assets/tank1.png" class="tank-img" alt="Tank P1">
+                        <div id="flash-p1" class="muzzle-flash hidden">💥</div>
+                        <div id="smoke-p1" class="smoke hidden">💨</div>
+                    </div>
+                </div>
+                <div class="question-area">
+                    <div class="question-card card-blue">
+                        <div class="timer-track"><div id="timer-bar-p1" class="timer-bar bar-blue" style="width:100%"></div></div>
+                        <div class="score-row"><span id="score-p1">Benar: 0</span></div>
+                        <h2 id="q-text-p1" class="q-text">Soal P1...</h2>
+                    </div>
+                    <div id="options-p1" class="options-container"></div>
+                </div>
+            </div>
+
+            <!-- PLAYER 2 -->
+            <div class="player-zone zone-red" id="p2-zone">
+                <div class="battle-area">
+                    <div class="decor-emoji decor-red">🌋</div>
+                    <div class="hud-row hud-reverse">
+                        <div class="avatar-badge badge-red">P2</div>
+                        <div class="health-bar-container">
+                            <div id="hp-p2" class="health-fill" style="width:100%"></div>
+                        </div>
+                    </div>
+                    <div id="tank-p2" class="tank-wrap">
+                        <img src="assets/tank2.png" class="tank-img tank-flip" alt="Tank P2">
+                        <div id="flash-p2" class="muzzle-flash flash-left hidden">💥</div>
+                        <div id="smoke-p2" class="smoke hidden">💨</div>
+                    </div>
+                </div>
+                <div class="question-area">
+                    <div class="question-card card-red">
+                        <div class="timer-track"><div id="timer-bar-p2" class="timer-bar bar-red" style="width:100%"></div></div>
+                        <div class="score-row score-right"><span id="score-p2">Benar: 0</span></div>
+                        <h2 id="q-text-p2" class="q-text">Soal P2...</h2>
+                    </div>
+                    <div id="options-p2" class="options-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-footer">Tank Battle IPAS Kelas 3 SD &bull; Main berdua di satu layar</div>
+    </div>
+
+    <!-- ================= WINNER ================= -->
+    <div id="winner-display">
+        <div class="winner-card">
+            <div class="winner-emoji">🏆</div>
+            <h2 id="winner-text">TIM BIRU MENANG!</h2>
+            <p id="winner-sub">Pertandingan Selesai</p>
+            <div class="result-stats">
+                <div class="stat-box stat-blue">
+                    <strong>P1</strong>
+                    <span id="stat-p1">0 benar</span>
+                </div>
+                <div class="stat-box stat-red">
+                    <strong>P2</strong>
+                    <span id="stat-p2">0 benar</span>
+                </div>
+            </div>
+            <div class="winner-actions">
+                <button class="btn-green" onclick="backToMenu()">MENU UTAMA</button>
+                <button class="btn-blue" onclick="restartGame()">MAIN LAGI</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/questions.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
