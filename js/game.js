@@ -28,8 +28,8 @@ let deckIndex = 0;
 let pending = 0;
 
 const gameState = {
-    p1: { hp: 100, locked: false, timerId: null, startTime: 0, benar: 0, salah: 0 },
-    p2: { hp: 100, locked: false, timerId: null, startTime: 0, benar: 0, salah: 0 },
+    p1: { hp: 100, prevHp: 100, locked: false, timerId: null, startTime: 0, lastTick: 99, benar: 0, salah: 0 },
+    p2: { hp: 100, prevHp: 100, locked: false, timerId: null, startTime: 0, lastTick: 99, benar: 0, salah: 0 },
     isPlaying: false
 };
 
@@ -114,6 +114,37 @@ function playSound(type) {
         gain.gain.setValueAtTime(0.18, now);
         gain.gain.linearRampToValueAtTime(0, now + 0.25);
         osc.start(now); osc.stop(now + 0.25);
+    } else if (type === "hit") {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.4);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
+    } else if (type === "tick") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1150, now);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.start(now); osc.stop(now + 0.07);
+    } else if (type === "alarm") {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.setValueAtTime(500, now + 0.12);
+        osc.frequency.setValueAtTime(720, now + 0.24);
+        gain.gain.setValueAtTime(0.13, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.start(now); osc.stop(now + 0.38);
+    } else if (type === "win") {
+        osc.type = "triangle";
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+            osc.frequency.setValueAtTime(f, now + i * 0.15);
+        });
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.22, now + 0.05);
+        gain.gain.setValueAtTime(0.22, now + 0.55);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+        osc.start(now); osc.stop(now + 0.85);
     } else {
         osc.frequency.setValueAtTime(420, now);
         gain.gain.setValueAtTime(0.1, now);
@@ -275,15 +306,16 @@ function startCountdownFlow() {
     let count = 3;
     const text = document.getElementById("countdown-text");
     text.textContent = count;
-    playSound("correct");
+    playSound("tick");
 
     const interval = setInterval(() => {
         count--;
         if (count > 0) {
             text.textContent = count;
-            playSound("correct");
+            playSound("tick");
         } else {
             clearInterval(interval);
+            playSound("correct");
             document.getElementById("countdown-screen").style.display = "none";
             startGame();
         }
@@ -301,8 +333,8 @@ function startGame() {
     img2.src = config.p2Image;
     img2.classList.add("tank-flip");
 
-    gameState.p1 = { hp: 100, locked: false, timerId: null, startTime: 0, benar: 0, salah: 0 };
-    gameState.p2 = { hp: 100, locked: false, timerId: null, startTime: 0, benar: 0, salah: 0 };
+    gameState.p1 = { hp: 100, prevHp: 100, locked: false, timerId: null, startTime: 0, lastTick: 99, benar: 0, salah: 0 };
+    gameState.p2 = { hp: 100, prevHp: 100, locked: false, timerId: null, startTime: 0, lastTick: 99, benar: 0, salah: 0 };
     gameState.isPlaying = true;
 
     updateHealth("p1");
@@ -320,6 +352,7 @@ function backToMenu() {
     gameState.isPlaying = false;
     stopTimer("p1");
     stopTimer("p2");
+    clearConfetti();
     document.getElementById("game-screen").style.display = "none";
     document.getElementById("winner-display").style.display = "none";
     document.getElementById("countdown-screen").style.display = "none";
@@ -328,6 +361,7 @@ function backToMenu() {
 }
 
 function restartGame() {
+    clearConfetti();
     document.getElementById("winner-display").style.display = "none";
     startCountdownFlow();
 }
@@ -375,6 +409,7 @@ function startTimer(playerStr) {
     }
 
     gameState[playerStr].startTime = Date.now();
+    gameState[playerStr].lastTick = 99;
     bar.style.width = "100%";
     bar.style.background = "#22c55e";
 
@@ -386,6 +421,12 @@ function startTimer(playerStr) {
 
         bar.style.width = pct + "%";
         bar.style.background = pct < 30 ? "#ef4444" : (pct < 60 ? "#eab308" : "#22c55e");
+
+        const secLeft = Math.ceil(remaining / 1000);
+        if (secLeft <= 5 && secLeft > 0 && secLeft !== gameState[playerStr].lastTick) {
+            gameState[playerStr].lastTick = secLeft;
+            playSound("tick");
+        }
 
         if (remaining <= 0) {
             handleTimeout(playerStr);
@@ -442,7 +483,7 @@ function handleTimeout(playerStr) {
     stopTimer(playerStr);
     gameState[playerStr].salah++;
     updateScore(playerStr);
-    playSound("wrong");
+    playSound("alarm");
 
     const container = document.getElementById("options-" + playerStr);
     lockButtons(container);
@@ -484,6 +525,9 @@ function shootProjectile(attacker, defender) {
     flash.classList.remove("hidden");
     setTimeout(() => flash.classList.add("hidden"), 150);
 
+    startElem.classList.add("firing");
+    setTimeout(() => startElem.classList.remove("firing"), 380);
+
     const startRect = startElem.getBoundingClientRect();
     const targetRect = targetElem.getBoundingClientRect();
 
@@ -515,14 +559,9 @@ function selfDamage(playerStr) {
     if (!gameState.isPlaying) return;
     const tank = document.getElementById("tank-" + playerStr);
     tank.classList.add("shake-element");
+    playSound("explosion");
 
-    const rect = tank.getBoundingClientRect();
-    const dmgText = document.createElement("div");
-    dmgText.className = "damage-text";
-    dmgText.textContent = "-" + SELF_DAMAGE;
-    dmgText.style.left = (rect.left + rect.width / 2 - 20 + (Math.random() * 40 - 20)) + "px";
-    dmgText.style.top = (rect.top - 10) + "px";
-    document.body.appendChild(dmgText);
+    spawnDamageText(tank, "-" + SELF_DAMAGE);
 
     const smoke = document.getElementById("smoke-" + playerStr);
     smoke.classList.remove("hidden");
@@ -530,24 +569,43 @@ function selfDamage(playerStr) {
     setTimeout(() => {
         tank.classList.remove("shake-element");
         smoke.classList.add("hidden");
-        dmgText.remove();
         applyDamage(playerStr, SELF_DAMAGE);
         advance(playerStr);
     }, 700);
 }
 
+function spawnDamageText(elem, text) {
+    const rect = elem.getBoundingClientRect();
+    const dmg = document.createElement("div");
+    dmg.className = "damage-text";
+    dmg.textContent = text;
+    dmg.style.left = (rect.left + rect.width / 2 - 22 + (Math.random() * 44 - 22)) + "px";
+    dmg.style.top = (rect.top - 10) + "px";
+    document.body.appendChild(dmg);
+    setTimeout(() => dmg.remove(), 1100);
+}
+
 function createExplosion(target) {
-    playSound("explosion");
+    playSound("hit");
     const tank = document.getElementById("tank-" + target);
+    const zone = document.getElementById(target + "-zone");
     tank.classList.add("shake-element");
+
+    if (zone) {
+        zone.classList.remove("zone-flash");
+        void zone.offsetWidth;
+        zone.classList.add("zone-flash");
+    }
 
     const boom = document.createElement("div");
     boom.className = "explosion-effect";
     boom.textContent = "💥";
     tank.appendChild(boom);
+    spawnDamageText(tank, "-" + DAMAGE);
 
     setTimeout(() => {
         tank.classList.remove("shake-element");
+        if (zone) zone.classList.remove("zone-flash");
         boom.remove();
     }, 600);
 }
@@ -565,9 +623,15 @@ function applyDamage(target, amount) {
 
 function updateHealth(playerStr) {
     const hp = gameState[playerStr].hp;
+    const prevHp = gameState[playerStr].prevHp !== undefined ? gameState[playerStr].prevHp : 100;
     const bar = document.getElementById("hp-" + playerStr);
     bar.style.width = hp + "%";
     bar.style.background = hp > 50 ? "#22c55e" : (hp > 20 ? "#eab308" : "#ef4444");
+
+    const isLow = hp > 0 && hp <= 30;
+    bar.classList.toggle("low-hp", isLow);
+    if (isLow && prevHp > 30) playSound("alarm");
+    gameState[playerStr].prevHp = hp;
 }
 
 function updateScore(playerStr) {
@@ -587,6 +651,27 @@ function finishByDeck() {
     } else {
         endGame("seri");
     }
+}
+
+function spawnConfetti() {
+    clearConfetti();
+    const holder = document.getElementById("winner-display");
+    const colors = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#06b6d4"];
+    for (let i = 0; i < 70; i++) {
+        const c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = (Math.random() * 100) + "%";
+        c.style.background = colors[i % colors.length];
+        c.style.width = (7 + Math.random() * 7) + "px";
+        c.style.height = (12 + Math.random() * 10) + "px";
+        c.style.animationDuration = (2.6 + Math.random() * 2.6) + "s";
+        c.style.animationDelay = (Math.random() * 1.2) + "s";
+        holder.appendChild(c);
+    }
+}
+
+function clearConfetti() {
+    document.querySelectorAll(".confetti").forEach(e => e.remove());
 }
 
 function endGame(winnerStr) {
@@ -622,7 +707,8 @@ function endGame(winnerStr) {
     }
 
     document.getElementById("winner-display").style.display = "flex";
-    playSound("correct");
+    spawnConfetti();
+    playSound(winnerStr === "seri" ? "correct" : "win");
 }
 
 /* ---------------- inisialisasi ---------------- */

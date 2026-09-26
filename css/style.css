@@ -302,6 +302,7 @@ body {
 .battle-row { flex: 1; display: flex; min-height: 0; }
 
 .player-zone {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -381,8 +382,28 @@ body {
     background-image: linear-gradient(45deg, rgba(255,255,255,.18) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.18) 50%, rgba(255,255,255,.18) 75%, transparent 75%);
     background-size: 1rem 1rem;
 }
+.health-fill.low-hp { animation: lowHpPulse .8s ease-in-out infinite; }
+@keyframes lowHpPulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.9) saturate(1.4); }
+}
+
+.player-zone.zone-flash::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    background: linear-gradient(rgba(239,68,68,.55), rgba(251,146,60,.35));
+    animation: hitFlash .4s ease-out forwards;
+}
+@keyframes hitFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
 
 .tank-wrap { position: relative; z-index: 3; line-height: 0; }
+#tank-p1.firing { animation: recoilRight .35s ease-out; }
+#tank-p2.firing { animation: recoilLeft .35s ease-out; }
+@keyframes recoilRight { 30% { transform: translateX(-12px); } }
+@keyframes recoilLeft { 30% { transform: translateX(12px); } }
 .tank-img {
     width: clamp(150px, 26vw, 250px);
     height: auto;
@@ -557,6 +578,20 @@ body {
     0% { transform: translate(-50%, -50%) scale(.5); opacity: 1; }
     50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
     100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+.confetti {
+    position: absolute;
+    top: -30px;
+    z-index: 320;
+    pointer-events: none;
+    border-radius: 2px;
+    opacity: .95;
+    animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(105vh) rotate(760deg); }
 }
 
 @keyframes shake {
