@@ -73,58 +73,91 @@ function renderOrFinish(playerStr) {
 
 /* ---------------- audio ---------------- */
 let audioCtx = null;
+
+function ensureAudio() {
+    try {
+        if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) {
+                console.warn("[audio] WebAudio tidak didukung browser ini");
+                return null;
+            }
+            audioCtx = new AC();
+        }
+        if (audioCtx.state !== "running" && typeof audioCtx.resume === "function") {
+            const p = audioCtx.resume();
+            if (p && typeof p.catch === "function") p.catch(function () {});
+        }
+        return audioCtx;
+    } catch (e) {
+        console.warn("[audio] gagal inisialisasi:", e);
+        return null;
+    }
+}
+
+/* unlock audio pada interaksi pertama (kebijakan autoplay browser) */
+["pointerdown", "mousedown", "touchstart", "keydown"].forEach(function (ev) {
+    document.addEventListener(ev, function unlock() {
+        const c = ensureAudio();
+        if (c && c.state === "running") {
+            ["pointerdown", "mousedown", "touchstart", "keydown"].forEach(function (e2) {
+                document.removeEventListener(e2, unlock, true);
+            });
+        }
+    }, { once: false, capture: true, passive: true });
+});
+
 function playSound(type) {
     if (!config.soundOn) return;
-    try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume();
-    } catch (e) { return; }
+    const ctx = ensureAudio();
+    if (!ctx) return;
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
+    try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const now = ctx.currentTime;
 
     if (type === "shoot") {
         osc.type = "square";
         osc.frequency.setValueAtTime(800, now);
         osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.setValueAtTime(0.40, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
         osc.start(now); osc.stop(now + 0.12);
     } else if (type === "explosion") {
         osc.type = "sawtooth";
         osc.frequency.setValueAtTime(120, now);
         osc.frequency.exponentialRampToValueAtTime(20, now + 0.5);
-        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.setValueAtTime(0.55, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc.start(now); osc.stop(now + 0.5);
     } else if (type === "correct") {
         osc.type = "sine";
         osc.frequency.setValueAtTime(600, now);
         osc.frequency.linearRampToValueAtTime(1100, now + 0.12);
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.25, now);
         gain.gain.linearRampToValueAtTime(0, now + 0.3);
         osc.start(now); osc.stop(now + 0.3);
     } else if (type === "wrong") {
         osc.type = "sawtooth";
         osc.frequency.setValueAtTime(160, now);
         osc.frequency.linearRampToValueAtTime(90, now + 0.25);
-        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.setValueAtTime(0.30, now);
         gain.gain.linearRampToValueAtTime(0, now + 0.25);
         osc.start(now); osc.stop(now + 0.25);
     } else if (type === "hit") {
         osc.type = "square";
         osc.frequency.setValueAtTime(440, now);
         osc.frequency.exponentialRampToValueAtTime(55, now + 0.4);
-        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.setValueAtTime(0.55, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
         osc.start(now); osc.stop(now + 0.4);
     } else if (type === "tick") {
         osc.type = "sine";
         osc.frequency.setValueAtTime(1150, now);
-        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.setValueAtTime(0.18, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
         osc.start(now); osc.stop(now + 0.07);
     } else if (type === "alarm") {
@@ -132,7 +165,7 @@ function playSound(type) {
         osc.frequency.setValueAtTime(720, now);
         osc.frequency.setValueAtTime(500, now + 0.12);
         osc.frequency.setValueAtTime(720, now + 0.24);
-        gain.gain.setValueAtTime(0.13, now);
+        gain.gain.setValueAtTime(0.28, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
         osc.start(now); osc.stop(now + 0.38);
     } else if (type === "win") {
@@ -141,15 +174,18 @@ function playSound(type) {
             osc.frequency.setValueAtTime(f, now + i * 0.15);
         });
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(0.22, now + 0.05);
-        gain.gain.setValueAtTime(0.22, now + 0.55);
+        gain.gain.exponentialRampToValueAtTime(0.35, now + 0.05);
+        gain.gain.setValueAtTime(0.35, now + 0.55);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
         osc.start(now); osc.stop(now + 0.85);
     } else {
         osc.frequency.setValueAtTime(420, now);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.16, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
         osc.start(now); osc.stop(now + 0.1);
+    }
+    } catch (e) {
+        console.warn("[audio] gagal memutar suara '" + type + "':", e);
     }
 }
 
@@ -157,6 +193,38 @@ function toggleSound() {
     config.soundOn = !config.soundOn;
     document.getElementById("btn-sound").textContent = config.soundOn ? "🔊" : "🔇";
     playSound("click");
+}
+
+function testSound() {
+    const status = document.getElementById("sound-status");
+    const prev = config.soundOn;
+    config.soundOn = true;
+
+    const ctx = ensureAudio();
+    if (!ctx) {
+        if (status) {
+            status.className = "sound-status bad";
+            status.textContent = "Browser ini tidak mendukung suara.";
+        }
+        config.soundOn = prev;
+        return;
+    }
+
+    playSound("correct");
+    setTimeout(() => playSound("hit"), 450);
+    setTimeout(() => playSound("tick"), 900);
+
+    if (status) {
+        if (ctx.state === "running") {
+            status.className = "sound-status ok";
+            status.textContent = "Suara aktif ✓ (jika tetap sunyi, cek volume perangkat/browser)";
+        } else {
+            status.className = "sound-status bad";
+            status.textContent = "Status audio: " + ctx.state + " - klik sekali lagi di layar ini";
+        }
+    }
+
+    setTimeout(() => { config.soundOn = prev; }, 1400);
 }
 
 /* ---------------- settings UI ---------------- */
@@ -721,4 +789,11 @@ window.addEventListener("load", () => {
 
     const badge = document.getElementById("status-text");
     badge.textContent = "Mode Lokal - " + (QUESTION_BANK[config.level] || []).length + " soal siap!";
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) {
+        badge.textContent = "Mode Lokal (suara tidak didukung browser)";
+        const st = document.getElementById("sound-status");
+        if (st) { st.className = "sound-status bad"; st.textContent = "Browser ini tidak mendukung suara."; }
+    }
 });

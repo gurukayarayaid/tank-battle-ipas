@@ -216,6 +216,25 @@ body {
 .setting-section { margin-bottom: 18px; }
 .setting-label { display: block; font-size: .95rem; font-weight: 600; color: #1e3a8a; margin-bottom: 8px; }
 
+.btn-test-sound {
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 12px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .15s;
+}
+.btn-test-sound:hover { background: #dbeafe; }
+.btn-test-sound:active { transform: scale(.98); }
+.sound-status { font-size: .78rem; color: #64748b; margin-top: 6px; font-weight: 500; }
+.sound-status.ok { color: #15803d; font-weight: 700; }
+.sound-status.bad { color: #b91c1c; font-weight: 700; }
+
 .char-btn {
     position: relative;
     width: 76px; height: 60px;
