@@ -68,7 +68,16 @@ function nextQuestion() {
 function renderOrFinish(playerStr) {
     if (!gameState.isPlaying) return;
     if (deckIndex < deck.length) { renderQuestion(playerStr); return; }
-    if (pending <= 0) finishByDeck();
+    if (pending <= 0) { finishByDeck(); return; }
+    showWaiting(playerStr);
+}
+
+function showWaiting(playerStr) {
+    stopTimer(playerStr);
+    const q = document.getElementById("q-text-" + playerStr);
+    if (q) q.textContent = "Semua soal sudah selesai! Tunggu pemain lainnya...";
+    const c = document.getElementById("options-" + playerStr);
+    if (c) { c.innerHTML = ""; c.className = "options-container wait-note"; }
 }
 
 /* ---------------- audio ---------------- */
