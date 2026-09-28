@@ -581,6 +581,18 @@ function advance(playerStr) {
 }
 
 /* ---------------- serangan ---------------- */
+function isZoneFlipped(elem) {
+    const zone = elem && elem.closest ? elem.closest(".player-zone") : null;
+    if (!zone) return false;
+    try {
+        const t = getComputedStyle(zone).transform;
+        if (!t || t === "none") return false;
+        return new DOMMatrixReadOnly(t).a < 0;
+    } catch (e) {
+        return false;
+    }
+}
+
 function shootProjectile(attacker, defender) {
     if (!gameState.isPlaying) return;
     playSound("shoot");
@@ -599,7 +611,9 @@ function shootProjectile(attacker, defender) {
     const startRect = startElem.getBoundingClientRect();
     const targetRect = targetElem.getBoundingClientRect();
 
-    const startX = attacker === "p1" ? startRect.right - 50 : startRect.left + 25;
+    const flipped = isZoneFlipped(startElem);
+    const muzzleRight = (attacker === "p1") !== flipped;
+    const startX = muzzleRight ? startRect.right - 50 : startRect.left + 25;
     const startY = startRect.top + 35;
     const endX = targetRect.left + targetRect.width / 2;
     const endY = targetRect.top + targetRect.height / 2;
@@ -645,7 +659,7 @@ function selfDamage(playerStr) {
 function spawnDamageText(elem, text) {
     const rect = elem.getBoundingClientRect();
     const dmg = document.createElement("div");
-    dmg.className = "damage-text";
+    dmg.className = "damage-text" + (isZoneFlipped(elem) ? " dmg-flip" : "");
     dmg.textContent = text;
     dmg.style.left = (rect.left + rect.width / 2 - 22 + (Math.random() * 44 - 22)) + "px";
     dmg.style.top = (rect.top - 10) + "px";
